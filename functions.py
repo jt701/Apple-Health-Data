@@ -4,14 +4,30 @@ import datetime as dt
 
 #To do/progess
 """ 1. validate enough data points are present (remember 1 year time frame)
+    -as long as dataframe is not null for now
     2. exports metrics to CSV, fill with NaN if not valid
-    3. deal with days being cutoff on backend
-        - solved by using an exact reduce function
-    4. What to inform investigator
-    - format of results, units as well
-    - ios update needed, fixed vs regular export.xml
-    5. figure out why standing time is dropped when using process_df
-    6. look at colab for worko
+    3. Types of Metrics
+        a. workout
+            i. no metric df needed
+        b. regular cumulative
+            i. ‘StepCount’
+            ii. 'FlightsClimbed'
+            iii. 'DistanceWalkingRunning'
+            iv. 'AppleExerciseTime'
+            v. ‘AppleStandTime’
+            vi. 'SleepAnalysis'
+        c. averaged
+            i. 'RespiratoryRate'
+            ii. 'OxygenSaturation'
+        d. additional (averaged)
+            i. 'HeartRateVariabilitySDNN'
+            ii. 'HeartRate'
+            iii. 'RunningSpeed;
+            iv. 'WalkingSpeed'
+            
+            
+    
+    
     
     
 Current Algo
@@ -26,19 +42,36 @@ def xml_to_df(filepath):
     tree = et.parse(filepath) 
     root = tree.getroot()
     record_list = [x.attrib for x in root.iter('Record')]
-    return pd.DataFrame(record_list)
+    workout_list = [x.attrib for x in root.iter('Workout')]
+    return pd.DataFrame(record_list), pd.DataFrame(workout_list)
 
 #proccess df to make it cleaner (dates, NaN values, etc.), mutates df
 def process_df(df):
-    for col in ['startDate']:
+    for col in ['startDate', 'endDate', 'creationDate']:
        df[col] = pd.to_datetime(df[col])
-    df['value'] = pd.to_numeric(df['value'], errors='coerce')
-    df.dropna(subset=['value'], inplace= True)
     df['type'] = df['type'].str.replace('HKQuantityTypeIdentifier', '')
     df['type'] = df['type'].str.replace('HKCategoryTypeIdentifier', '')
+    df.loc[df["value"] == "HKCategoryValueSleepAnalysisAsleepUnspecified", "source"] = 0
+    df.loc[df["type"] == "SleepAnalysis", "value"] = df.loc[df["type"] == "SleepAnalysis", "endDate"]-  df.loc[df["type"] == "SleepAnalysis", "startDate"] 
+    df.loc[df["type"] == "SleepAnalysis", "value"] = df.loc[df["type"] == "SleepAnalysis", "value"].apply(lambda x: round(x.total_seconds() / 60, 2))
+    df['value'] = pd.to_numeric(df['value'], errors='coerce')
+    df.dropna(subset=['value'], inplace= True)
+    
+
+def process_workout(df):
+    for col in ['startDate']:
+        df[col] = pd.to_datetime(df[col])
+    df['duration'] = pd.to_numeric(df['duration'])
+    df.dropna(subset=['duration'], inplace= True)
+    df['workoutActivityType'] =df['workoutActivityType'].str.replace('HKWorkoutActivityType', '')
+    df.rename(columns={"duration": "value"}, inplace = True)
+    #df['workoutActivityType'] =df['workoutActivityType'].str.replace('HKWorkoutActivityType', '')
 
 #returns new df with only the given metric  
 def get_metric_df(df, metric):
+    if metric == "SleepAnalysis":
+        df = df[df["type"] == metric]
+        return df.dropna(subset=['source'])
     return df[df["type"] == metric]
 
 
@@ -117,6 +150,7 @@ def combined_daily_stats(df, metric):
     results.extend(["all time", daily_stats(metric_df, 10000) ])
     return results
 
+#for averaged stats
 def combined_daily_stats_avg(df, metric):
     metric_df = get_metric_df(df, metric)
     #if len(metric_df) == 0:
@@ -127,6 +161,16 @@ def combined_daily_stats_avg(df, metric):
     results.extend(["year", daily_stats_avg(metric_df, 365) ])
     results.extend(["all time", daily_stats_avg(metric_df, 10000) ])
     return results
+
+def combined_daily_stats_workout(df, metric):
+    metric_df = df
+    results = ["daily" + metric]
+    results.extend(["week", daily_stats_avg(metric_df, 7) ])
+    results.extend(["month", daily_stats_avg(metric_df, 30) ])
+    results.extend(["year", daily_stats_avg(metric_df, 365) ])
+    results.extend(["all time", daily_stats_avg(metric_df, 10000) ])
+    return results
+
 
 #defined as 7 days, chunks and provides stats based on week
 def weekly_stats(df, sample_period):
@@ -197,6 +241,7 @@ def combined_longer_stats(df, metric):
     results.extend(["cumulative year", yearly_stats(metric_df, numYears * 365)])
     return results
 
+#combined states for average metrics
 def combined_longer_stats_avg(df, metric):
     metric_df = get_metric_df(df, metric)
     results = ["daily" + metric]
@@ -206,8 +251,18 @@ def combined_longer_stats_avg(df, metric):
     print(numYears)
     results.extend(["cumulative year", yearly_stats_avg(metric_df, numYears * 365)])
     return results
+
+#stats for workout specifically
+def combined_longer_stats_workout(df, metric):
+    metric_df = df
+    results = ["daily" + metric]
+    results.extend(["cumulative week", weekly_stats_avg(metric_df, 364) ])
+    results.extend(["cumulative month", monthly_stats_avg(metric_df, 360) ])
+    numYears = (metric_df['startDate'].max() -  metric_df['startDate'].min()) / dt.timedelta(days=1)  // 365
+    results.extend(["cumulative year", yearly_stats_avg(metric_df, numYears * 365)])
+    return results
     
-    
+  
     
     
     
