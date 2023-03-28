@@ -22,17 +22,10 @@ import datetime as dt
         d. additional (averaged)
             i. 'HeartRateVariabilitySDNN'
             ii. 'HeartRate'
-            iii. 'RunningSpeed;
+            iii. 'RunningSpeed'
             iv. 'WalkingSpeed'
             
-            
-    
-    
-    
-    
-Current Algo
-1. process data
-2. chunk into time frame, reduce into time frame
+
 """ 
 
 #converts xml file to df using filepath
@@ -45,7 +38,7 @@ def xml_to_df(filepath):
     workout_list = [x.attrib for x in root.iter('Workout')]
     return pd.DataFrame(record_list), pd.DataFrame(workout_list)
 
-#proccess df to make it cleaner (dates, NaN values, etc.), mutates df
+#proccess record df to make it cleaner (dates, NaN values, etc.), mutates df
 def process_df(df):
     for col in ['startDate', 'endDate', 'creationDate']:
        df[col] = pd.to_datetime(df[col])
@@ -57,7 +50,7 @@ def process_df(df):
     df['value'] = pd.to_numeric(df['value'], errors='coerce')
     df.dropna(subset=['value'], inplace= True)
     
-
+#process workout df to make it cleaner
 def process_workout(df):
     for col in ['startDate']:
         df[col] = pd.to_datetime(df[col])
@@ -65,7 +58,7 @@ def process_workout(df):
     df.dropna(subset=['duration'], inplace= True)
     df['workoutActivityType'] =df['workoutActivityType'].str.replace('HKWorkoutActivityType', '')
     df.rename(columns={"duration": "value"}, inplace = True)
-    #df['workoutActivityType'] =df['workoutActivityType'].str.replace('HKWorkoutActivityType', '')
+   
 
 #returns new df with only the given metric  
 def get_metric_df(df, metric):
@@ -101,6 +94,7 @@ def resample_sum(df, time_period):
         daily_counts = daily_counts.resample('365D').sum()
     return daily_counts.to_frame()
 
+#resampling for metrics that must be averaged (blood oxygen, etc. )
 def resample_sum_avg(df, time_period):
     df.set_index('startDate', inplace=True)
     daily_counts = df['value'].resample('D').mean()
@@ -122,6 +116,7 @@ def resample_sum_avg(df, time_period):
 def daily_stats(df, sample_period):
     reduced_df = reduce(df, sample_period)
     chunked_df = resample_sum(reduced_df, 'day')
+    print(chunked_df)
     mean = round(float(chunked_df.mean()), 2)
     median = round(float(chunked_df.median()), 2)
     max = round(float(chunked_df.max()), 2)
@@ -165,10 +160,10 @@ def combined_daily_stats_avg(df, metric):
 def combined_daily_stats_workout(df, metric):
     metric_df = df
     results = ["daily" + metric]
-    results.extend(["week", daily_stats_avg(metric_df, 7) ])
-    results.extend(["month", daily_stats_avg(metric_df, 30) ])
-    results.extend(["year", daily_stats_avg(metric_df, 365) ])
-    results.extend(["all time", daily_stats_avg(metric_df, 10000) ])
+    results.extend(["week", daily_stats(metric_df, 7) ])
+    results.extend(["month", daily_stats(metric_df, 30) ])
+    results.extend(["year", daily_stats(metric_df, 365) ])
+    results.extend(["all time", daily_stats(metric_df, 10000) ])
     return results
 
 
@@ -222,7 +217,7 @@ def yearly_stats(df, sample_period):
 
 def yearly_stats_avg(df, sample_period):
     reduced_df = reduce(df, sample_period)
-    chunked_df = resample_sum(reduced_df, 'year')
+    chunked_df = resample_sum_avg(reduced_df, 'year')
     mean = round(float(chunked_df.mean()), 2)
     median = round(float(chunked_df.median()), 2)
     max = round(float(chunked_df.max()), 2)
@@ -237,7 +232,6 @@ def combined_longer_stats(df, metric):
     results.extend(["cumulative week", weekly_stats(metric_df, 364) ])
     results.extend(["cumulative month", monthly_stats(metric_df, 360) ])
     numYears = (metric_df['startDate'].max() -  metric_df['startDate'].min()) / dt.timedelta(days=1)  // 365
-    print(numYears)
     results.extend(["cumulative year", yearly_stats(metric_df, numYears * 365)])
     return results
 
@@ -248,7 +242,6 @@ def combined_longer_stats_avg(df, metric):
     results.extend(["cumulative week", weekly_stats_avg(metric_df, 364) ])
     results.extend(["cumulative month", monthly_stats_avg(metric_df, 360) ])
     numYears = (metric_df['startDate'].max() -  metric_df['startDate'].min()) / dt.timedelta(days=1)  // 365
-    print(numYears)
     results.extend(["cumulative year", yearly_stats_avg(metric_df, numYears * 365)])
     return results
 
@@ -256,10 +249,10 @@ def combined_longer_stats_avg(df, metric):
 def combined_longer_stats_workout(df, metric):
     metric_df = df
     results = ["daily" + metric]
-    results.extend(["cumulative week", weekly_stats_avg(metric_df, 364) ])
-    results.extend(["cumulative month", monthly_stats_avg(metric_df, 360) ])
+    results.extend(["cumulative week", weekly_stats(metric_df, 364) ])
+    results.extend(["cumulative month", monthly_stats(metric_df, 360) ])
     numYears = (metric_df['startDate'].max() -  metric_df['startDate'].min()) / dt.timedelta(days=1)  // 365
-    results.extend(["cumulative year", yearly_stats_avg(metric_df, numYears * 365)])
+    results.extend(["cumulative year", yearly_stats(metric_df, numYears * 365)])
     return results
     
   

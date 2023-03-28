@@ -1,16 +1,16 @@
-import functions as f
+import functions_messy as f
 
 #record = f.xml_to_df("data/joseph_health_data/export.xml")
 record, workout = f.xml_to_df("data/marmor_health_data/export_fixed.xml")
-f.process_df(record)
+#f.process_df(record)
 f.process_workout(workout)
-print(workout)
+#print(workout)
 #print(record['type'].unique())
 #print(record['type'].unique())
 #x = f.get_metric_df(record, "SleepAnalysis")
 #print(x)
 #print(f.reduce(x[x['sourceName'] == 'SleepWatch'], 3))
-#print(f.combined_longer_stats(record, "StepCount" ))
+print(f.combined_daily_stats_workout(workout, "mins" ))
 
 #print(f.combined_daily_stats(record, 'SleepAnalysis'))
 
