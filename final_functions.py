@@ -1,6 +1,7 @@
 import pandas as pd
 import xml.etree.ElementTree as et
 import datetime as dt
+import numpy as np
 
 #takes in xml, returns record df and workout df
 def xml_to_df(filepath):
@@ -12,6 +13,8 @@ def xml_to_df(filepath):
 
 #proccess record df to make it cleaner (dates, NaN values, etc.), mutates df
 def process_df(df):
+    if df.empty:
+        return df
     for col in ['startDate', 'endDate', 'creationDate']:
        df[col] = pd.to_datetime(df[col])
     df['type'] = df['type'].str.replace('HKQuantityTypeIdentifier', '')
@@ -24,6 +27,8 @@ def process_df(df):
     
 #process workout df to make it cleaner
 def process_workout(df):
+    if df.empty:
+        return df
     for col in ['startDate']:
         df[col] = pd.to_datetime(df[col])
     df['duration'] = pd.to_numeric(df['duration'])
@@ -98,12 +103,18 @@ def longer_stats(df, sample_period, chunk_size, avg = False):
 #mean, median, max, min for daily: week, month, year, all time and cumulative: week, month, year in that order
 #unlabeled such that we can run array to dataframe and then csv
 def get_all_stats(df, metric, avg = False, workout = False):
+    if df.empty:
+        results = [metric]
+        results.extend([np.nan for i in range (28)])
+        return results
     if workout or metric == "WorkoutMinutes":
         metric_df = df
     else:
         metric_df = get_metric_df(df, metric)
-    if len(metric_df) == 0:
-        return [metric]
+    if metric_df.empty or len(metric_df) == 0:
+        results = [metric]
+        results.extend([np.nan for i in range (28)])
+        return results
     results = [metric]
     results.extend(daily_stats(metric_df, 7, avg))
     results.extend(daily_stats(metric_df, 30, avg))
@@ -126,11 +137,11 @@ def main(filepath):
     results.append(get_all_stats(record, "AppleExerciseTime"))
     results.append(get_all_stats(record, "AppleStandTime"))
     results.append(get_all_stats(record, "SleepAnalysis"))
-    results.append(get_all_stats(record, "WorkoutMinutes", workout = True))
-    results.append(get_all_stats(record, "RespiratoryRate"))
-    results.append(get_all_stats(record, "OxygenSaturation"))
-    results.append(get_all_stats(record, "HeartRateVariabilitySDNN"))
-    results.append(get_all_stats(record, "HeartRate"))
-    results.append(get_all_stats(record, "RunningSpeed"))
-    results.append(get_all_stats(record, "WalkingSpeed"))
+    results.append(get_all_stats(workout, "WorkoutMinutes", workout = True))
+    results.append(get_all_stats(record, "RespiratoryRate", avg = True))
+    results.append(get_all_stats(record, "OxygenSaturation", avg = True))
+    results.append(get_all_stats(record, "HeartRateVariabilitySDNN", avg = True))
+    results.append(get_all_stats(record, "HeartRate", avg = True))
+    results.append(get_all_stats(record, "RunningSpeed", avg = True))
+    results.append(get_all_stats(record, "WalkingSpeed", avg = True))
     return results
