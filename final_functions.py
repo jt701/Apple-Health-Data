@@ -75,7 +75,11 @@ def resample_sum(df, time_period, avg = False):
 
 #provides daily averages over sample_period for metric
 #if avg is True, signals to resample sum that aggregration by mean must occur
+#validates that data exists throughout the entire sample period
 def daily_stats(df, sample_period, avg = False):
+    delta = df['startDate'].max() -  df['startDate'].min()
+    if delta.days < sample_period:
+        return [np.nan for i in range(4)]
     reduced_df = reduce(df, sample_period)
     chunked_df = resample_sum(reduced_df, 'day', avg)
     mean = round(float(chunked_df.mean()), 2)
@@ -88,7 +92,11 @@ def daily_stats(df, sample_period, avg = False):
 #calls resample_sum_avg if avg is True
 #metric is cumulative over chunk_size (i.e chunk_size = 'week' would take the cumulative sum in chunks of weeks)
 #chunk_size is 'week', 'month', 'year'
+#validates that data exists throughout the entire sample period
 def longer_stats(df, sample_period, chunk_size, avg = False):
+    delta = df['startDate'].max() -  df['startDate'].min()
+    if delta.days < sample_period:
+        return [np.nan for i in range(4)]
     reduced_df = reduce(df, sample_period)
     chunked_df = resample_sum(reduced_df, chunk_size, avg)
     mean = round(float(chunked_df.mean()), 2)
