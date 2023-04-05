@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 import main as m
+import csv
 
 class XmlToCsvConverter:
     def __init__(self, master):
@@ -27,14 +28,20 @@ class XmlToCsvConverter:
             filetypes=[("XML files", "*.xml")]
         )
 
+    #try except block, except with this xml is not configured correctly
+    #write correctly
     def convert_to_csv(self):
         if self.input_file_path:
             input_file_dir, input_file_name = os.path.split(self.input_file_path)
             input_file_base_name, input_file_ext = os.path.splitext(input_file_name)
             output_file_name = input_file_base_name + ".csv"
             output_file_path = os.path.join(input_file_dir, output_file_name)
-            os.replace(m.main(self.input_file_path), output_file_path)
-            tk.messagebox.showinfo("Conversion Complete", f"CSV file saved as {output_file_path}")
+            try:
+                stat_df = m.main(self.input_file_path)
+                stat_df.to_csv(output_file_path, index=False)
+                tk.messagebox.showinfo("Conversion Complete", f"CSV file saved as {output_file_path}")
+            except:
+                tk.messagebox.showinfo("XML file is not of the proper configuration. Choose an alternative XML file if possible")
 
 if __name__ == "__main__":
     # Create the Tkinter window

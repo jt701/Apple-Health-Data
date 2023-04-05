@@ -78,7 +78,7 @@ def resample_sum(df, time_period, avg = False):
 #validates that data exists throughout the entire sample period
 def daily_stats(df, sample_period, avg = False):
     delta = df['startDate'].max() -  df['startDate'].min()
-    if delta.days < sample_period:
+    if delta.days < sample_period and sample_period < 1000:
         return [np.nan for i in range(4)]
     reduced_df = reduce(df, sample_period)
     chunked_df = resample_sum(reduced_df, 'day', avg)
