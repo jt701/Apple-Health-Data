@@ -3,6 +3,7 @@ import xml.etree.ElementTree as et
 import datetime as dt
 import numpy as np
 
+
 #takes in xml, returns record df and workout df
 def xml_to_df(filepath):
     tree = et.parse(filepath) 
@@ -123,7 +124,7 @@ def get_all_stats(df, metric, avg = False, workout = False):
         results = [metric]
         results.extend([np.nan for i in range (28)])
         return results
-    results = [metric]
+    results = [metric + get_units(metric)]
     results.extend(daily_stats(metric_df, 7, avg))
     results.extend(daily_stats(metric_df, 30, avg))
     results.extend(daily_stats(metric_df, 365, avg))
@@ -134,6 +135,28 @@ def get_all_stats(df, metric, avg = False, workout = False):
     results.extend(longer_stats(metric_df, num_years * 365, 'year', avg))
     return results
 
+#gets units for a given metric, needs to be updated if new metric is added
+def get_units(metric):
+    if metric == "StepCount":
+        return "(steps)"
+    elif metric == "FlightsClimbed":
+        return "(flights)"
+    elif metric == "DistanceWalkingRunning":
+        return "(miles)"
+    elif metric == "AppleExerciseTime" or metric == "AppleStandTime" or metric == "SleepAnalysis" or metric == "WorkoutMinutes":
+        return "(min)"
+    elif metric == "RespiratoryRate":
+        return "(breaths/min)"
+    elif metric == "OxygenSaturation":
+        return "(fraction)"
+    elif metric == "HeartRateVariabilitySDNN":
+        return "(ms)"
+    elif metric == "HeartRate":
+        return "(BPM)"
+    elif metric == "RunningSpeed" or metric == "WalkingSpeed":
+        return "(mph)"
+    return ""
+    
 def main(filepath):
     record, workout = xml_to_df(filepath)
     process_df(record)
