@@ -13,5 +13,19 @@ def main(filepath):
     column_labels.extend(['Y(sum)-avg', 'Y(sum)-med', 'Y(sum)-max', 'Y(sum)-min'])
     df = pd.DataFrame(data, columns = column_labels)
     return df
-   
+
+#returns number of valid metrics
+def valid_rows(df):
+    count = 0
+    for i in range(len(df)):
+        if len(df.iloc[i].dropna()) > 1:
+            count += 1
+    return count
+
+#return number of boxes filled 
+def entries_filled(df):
+    return df.count().sum() - 13
+
+
+
 
