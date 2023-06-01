@@ -1,5 +1,7 @@
 import final_functions as f
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 #return df of all statistics
 def main(filepath):
@@ -25,6 +27,8 @@ def valid_rows(df):
 #return number of boxes filled 
 def entries_filled(df):
     return df.count().sum() - 13
+
+
 
 
 
