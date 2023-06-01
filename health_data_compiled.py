@@ -26,6 +26,8 @@ class XmlToCsvConverter:
         self.numMetrics = 0 
         self.numEntries = 0
         
+        self.numMetric_label = None
+        self.numEntries_label = None
     
         
         
@@ -78,14 +80,19 @@ class XmlToCsvConverter:
             try:
                 stat_df = m.main(self.input_file_path)
                 stat_df.to_csv(output_file_path, index=False)
+                print(stat_df)
                 self.numMetrics = m.valid_rows(stat_df)
                 self.numEntries = m.entries_filled(stat_df)
                 
-                numMetric_label = tk.Label(self.master, text=f"Percentage of Metrics: {int(self.numMetrics / 13 * 100)} %")
-                numMetric_label.pack()
+                if self.numMetric_label:
+                    self.numMetric_label.destroy()
+                self.numMetric_label = tk.Label(self.master, text=f"Percentage of Metrics: {int(self.numMetrics / 13 * 100)} %")
+                self.numMetric_label.pack()
                 
-                numEntries_label = tk.Label(self.master, text=f"Percentage of Boxes: {int(self.numEntries / 364 * 100)} %")
-                numEntries_label.pack()
+                if self.numEntries_label:
+                    self.numEntries_label.destroy()
+                self.numEntries_label = tk.Label(self.master, text=f"Percentage of Boxes: {int(self.numEntries / 364 * 100)} %")
+                self.numEntries_label.pack()
             
 
 
