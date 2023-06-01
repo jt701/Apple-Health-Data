@@ -6,11 +6,20 @@ import numpy as np
 
 #takes in xml, returns record df and workout df
 def xml_to_df(filepath):
-    tree = et.parse(filepath) 
-    root = tree.getroot()
-    record_list = [x.attrib for x in root.iter('Record')]
-    workout_list = [x.attrib for x in root.iter('Workout')]
-    return pd.DataFrame(record_list), pd.DataFrame(workout_list)
+    record_data = []
+    workout_data = []
+
+    for event, elem in et.iterparse(filepath):
+        if elem.tag == "Record":
+            record_data.append(elem.attrib)
+        elif elem.tag == "Workout":
+            workout_data.append(elem.attrib)
+        elem.clear()  # Clear the element from memory after processing
+
+    record_df = pd.DataFrame(record_data)
+    workout_df = pd.DataFrame(workout_data)
+    
+    return record_df, workout_df
 
 #proccess record df to make it cleaner (dates, NaN values, etc.), mutates df
 def process_df(df):
