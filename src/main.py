@@ -1,7 +1,5 @@
-import final_functions as f
+import src.final_functions as f
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 #return df of all statistics
 def main(filepath):

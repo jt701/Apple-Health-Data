@@ -4,8 +4,15 @@ import datetime as dt
 import numpy as np
 
 
-#takes in xml, returns record df and workout df
 def xml_to_df(filepath):
+    """Iteratively parses through each item in filepath and returns workout and record dataframes 
+
+    Args:
+        filepath (path): apple health data xml file
+
+    Returns:
+        pd.Dataframe: two dataframes corresponding to workout and regular health events
+    """
     record_data = []
     workout_data = []
 
@@ -21,8 +28,16 @@ def xml_to_df(filepath):
     
     return record_df, workout_df
 
-#proccess record df to make it cleaner (dates, NaN values, etc.), mutates df
+
 def process_df(df):
+    """Processes and mutates dataframe to make it cleaner, only for records df
+
+    Args:
+        df (pd.Dataframe): record dataframe 
+
+    Returns:
+        None (mutates df directly to save storage becasue of their size)
+    """
     if df.empty:
         return df
     for col in ['startDate', 'endDate', 'creationDate']:
@@ -37,6 +52,14 @@ def process_df(df):
     
 #process workout df to make it cleaner
 def process_workout(df):
+    """Processes and mutates dataframe to make it cleaner, only for workouts df
+
+    Args:
+        df (pd.Dataframe): workouts dataframe 
+
+    Returns:
+        None (mutates df directly to save storage becasue of their size)
+    """
     if df.empty:
         return df
     for col in ['startDate']:
@@ -45,26 +68,50 @@ def process_workout(df):
     df.dropna(subset=['duration'], inplace= True)
     df['workoutActivityType'] =df['workoutActivityType'].str.replace('HKWorkoutActivityType', '')
     df.rename(columns={"duration": "value"}, inplace = True)
-
-#returns new df with only the given metric  
+  
 def get_metric_df(df, metric):
+    """Returns dataframe with only a certain health metric
+
+    Args:
+        df (pd.Dataframe): workout or record df
+        metric (string): describes specific health metric
+
+    Returns:
+        pd.Dataframe: dataframe that only contains specified metric
+    """
     if metric == "SleepAnalysis":
         df = df[df["type"] == metric]
         return df.dropna(subset=['source'])
     return df[df["type"] == metric]
 
-#takes in time period and reduces to only this time period in days, does not include the lower bound
-#starts at max data point and goes backwards (not at start of day)
 def reduce(df, time_period):
+    """Takes dataframe and only includes data for a certain time period
+
+    Args:
+        df (pd.Dataframe): metric dataframe
+        time_period (int): number of days to include
+
+    Returns:
+        pd.Dataframe: dataframe that only includes data from a certain time period
+    """
     max_date = df['startDate'].max().replace(hour=0, minute=0, second=0, microsecond=0)
     time_frame = max_date - dt.timedelta(days=time_period)
     df = df[df['startDate'] < max_date]
     return df[df['startDate'] > time_frame]
 
-#returns df in chunks of time_period (day, week, month)
-#does so by resampling every x days (goes backwards from max date, not at start of day)
-#aggregates by summing, if avg = True it aggregrates by mean for metrics like blood oxygen, etc. 
+
 def resample_sum(df, time_period, avg = False):
+    """Aggregrates data by a certain time period. 
+    Summed for most metrics (stepCount etc.) but metrics like heart rate are averaged
+
+    Args:
+        df (pd.Dataframe): metric dataframe
+        time_period (int): numbers of days to group sample buy
+        avg (bool, optional): whether or not aggregration is done by averaging. Defaults to False.
+
+    Returns:
+        pd.Dataframe: dataframe that is aggregrated by a certain time period
+    """
     df.set_index('startDate', inplace=True)
     if avg:
         daily_counts = df['value'].resample('D').mean()
@@ -82,11 +129,19 @@ def resample_sum(df, time_period, avg = False):
     return daily_counts.to_frame()
 
 
-
-#provides daily averages over sample_period for metric
-#if avg is True, signals to resample sum that aggregration by mean must occur
-#validates that data exists throughout the entire sample period
 def daily_stats(df, sample_period, avg = False):
+    """Obtains daily mean, median, max, min stats over a certain sample_period
+    If average is True, daily stats are found by aggregration. In other words, 
+    cumulative sum over a sample period is calculated. 
+
+    Args:
+        df (pd.Dataframe): metric dataframe_
+        sample_period (int): number of days sampled
+        avg (bool, optional): Whether or not the stat is cumulative. Defaults to False.
+
+    Returns:
+        int array: mean, median, max, min for daily over sample period
+    """
     delta = df['startDate'].max() -  df['startDate'].min()
     if delta.days < sample_period and sample_period < 1000:
         return [np.nan for i in range(4)]
@@ -98,12 +153,19 @@ def daily_stats(df, sample_period, avg = False):
     min = round(float(chunked_df.min()), 2)
     return [mean, median, max, min]
 
-#provides cumulative averages over sample_period for metric
-#calls resample_sum_avg if avg is True
-#metric is cumulative over chunk_size (i.e chunk_size = 'week' would take the cumulative sum in chunks of weeks)
-#chunk_size is 'week', 'month', 'year'
-#validates that data exists throughout the entire sample period
+
 def longer_stats(df, sample_period, chunk_size, avg = False):
+    """Gets stats for chunks greater than a singular day. 
+
+    Args:
+        df (pd.Dataframe): metric dataframe
+        sample_period (int): number of days sampled
+        chunk_size (int): how many days in a chunk (i.e 7 if we want week to week comparisons)
+        avg (bool, optional): Whether or not stats should be cumulative. Defaults to False.
+
+    Returns:
+        int array: mean, median, max, min for respective sample period and chunk size
+    """
     delta = df['startDate'].max() -  df['startDate'].min()
     if delta.days < sample_period:
         return [np.nan for i in range(4)]
@@ -115,12 +177,20 @@ def longer_stats(df, sample_period, chunk_size, avg = False):
     min = round(float(chunked_df.min()), 2)
     return [mean, median, max, min]
     
-#returns all stats for a given metric, takes in whether it is an averaged metric, or a workout
-#currently, only validates that there are elements in the metric_df
-#returns list of given metric
-#mean, median, max, min for daily: week, month, year, all time and cumulative: week, month, year in that order
-#unlabeled such that we can run array to dataframe and then csv
 def get_all_stats(df, metric, avg = False, workout = False):
+    """Returns all stats for a given metric
+
+    Args:
+        df (pd.Dataframe): metric dataframe
+        metric (string): type of health metric
+        avg (bool, optional):Whether or not metric itself needs to be aggregrated
+            by average instead of sum(i.e heart rate). Defaults to False.
+        workout (bool, optional): Whether or not metric is workout metric. Defaults to False.
+
+    Returns:
+       pd.Dataframe: has all stats (chunked by week, month, year, all-time) and over various time periods in
+       a singular array. Represents a row in final dataframe. 
+    """
     if df.empty:
         results = [metric]
         results.extend([np.nan for i in range (28)])
@@ -146,6 +216,14 @@ def get_all_stats(df, metric, avg = False, workout = False):
 
 #gets units for a given metric, needs to be updated if new metric is added
 def get_units(metric):
+    """Gets unit name based on metric
+
+    Args:
+        metric (string): type of health metric
+
+    Returns:
+        string: unit for the respective health metric
+    """
     if metric == "StepCount":
         return "(steps)"
     elif metric == "FlightsClimbed":
@@ -167,6 +245,14 @@ def get_units(metric):
     return ""
     
 def main(filepath):
+    """Calls get all stats for each metric. Appends each one to an array.
+
+    Args:
+        filepath (path): filepath for apple health xml file
+
+    Returns:
+        array: each element is all the stats for a specific metric. Array of depth 2
+    """
     record, workout = xml_to_df(filepath)
     process_df(record)
     process_workout(workout)

@@ -2,10 +2,14 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
 import os
-import main as m
-import csv
+import src.main as m
 import sys
 
+"""
+Graphical user interface that allows you to select xml apple health file from computer. 
+You can then obtains its stats. These stats are saved as a csv in the same folder as the
+apple health data. 
+"""
 #loading icon when opening program
 if getattr(sys, 'frozen', False):
     import pyi_splash
@@ -66,10 +70,7 @@ class XmlToCsvConverter:
     #try except block, except with this xml is not configured correctly
     #write correctly
     def convert_to_csv(self):
-        """progress  = ttk.Progressbar(root, orient='horizontal', length=200, mode='indeterminate')
-        progress.pack()
-        progress.start()
-        """
+        
         if self.input_file_path:
             input_file_dir, input_file_name = os.path.split(self.input_file_path)
             input_file_base_name, input_file_ext = os.path.splitext(input_file_name)
