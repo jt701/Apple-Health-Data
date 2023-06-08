@@ -3,6 +3,6 @@ Program parses apple health data. It prompts the user to select the apple health
 
 # Usage
 1. Install any dependencies from requirements.txt
-2. Run "health_data_compiled.py" (the actual compiled version is left for space reasons)
+2. Run "health_data_compiled.py" (the actual compiled version is left out for space reasons)
 3. Follow the steps on the accompanying tkinter GUI
 
