@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
 import os
-import src.main as m
+import main as m
 import sys
 
 """

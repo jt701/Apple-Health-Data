@@ -1,4 +1,4 @@
-import src.final_functions as f
+import final_functions as f
 import pandas as pd
 
 #return df of all statistics
