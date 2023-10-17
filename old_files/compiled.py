@@ -13,7 +13,6 @@ def main():
     csv_filename = os.path.basename(csv_file)
     csv_filepath = os.path.join(csv_dirname, csv_filename)
     os.replace(csv_file, csv_filepath)
-    
 if __name__ == '__main__':
     while True:
         main()
