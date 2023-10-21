@@ -53,6 +53,7 @@ def bar_subplots_app(app_data, lab_data, metric_list, stat_list, plot_xdim, plot
             stat = app_data[0].columns[stat_num]
             y_label = metric + " " + stat
             title = y_label
+            y_label = ""
             bar_subplot(subjects, values[curr_graph], axes[i,j], title, x_label, y_label)
     fig.suptitle("Bar Plots")
     plt.tight_layout()
@@ -102,6 +103,13 @@ def scatter(xvals, yvals, title='Scatter Example', xlabel='Categories', ylabel='
     ax.set_title(title)
     plt.show()
     
+def subplot_scatter(xvals, yvals, ax, title, xlabel, ylabel):
+    ax.scatter(xvals, yvals)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    return ax
+    
 def scatter_full(lab_data, app_data, metric_num, stat_num, test):
     app_values = get_app_vals(app_data, metric_num, stat_num)
     lab_values = get_lab_vals(lab_data, test)
@@ -110,6 +118,31 @@ def scatter_full(lab_data, app_data, metric_num, stat_num, test):
     app_label = metric + " " + stat 
     title = app_label + " vs " + test
     scatter(app_values, lab_values, title, app_label, test)
+    
+def scatter_subplots(lab_data, app_data, metric_lst, stat_lst, tests, plot_xdim, plot_ydim):
+    app_val_lst = []
+    lab_val_lst = []
+    for i in range(len(metric_lst)):
+        app_val_lst.append(get_app_vals(app_data, metric_lst[i], stat_lst[i]))
+        lab_val_lst.append(get_lab_vals(lab_data, tests[i]))
+    fig, axes = plt.subplots(plot_xdim, plot_ydim)
+    for i in range(plot_xdim):
+        for j in range(plot_ydim):
+            curr_graph = i * plot_ydim + j
+            if curr_graph >= len(metric_lst):
+                continue
+            metric_num = metric_lst[curr_graph]
+            stat_num = stat_lst[curr_graph]
+            metric = app_data[0].iloc[metric_num, 0]
+            stat = app_data[0].columns[stat_num]
+            x_label = metric + " " + stat
+            y_label = tests[i]
+            title = y_label + " vs " + x_label
+            subplot_scatter(app_val_lst[curr_graph], lab_val_lst[curr_graph], axes[i,j], title, x_label, y_label)
+    fig.suptitle("Scatter Plots")
+    plt.tight_layout()
+    plt.show()
+    
     
 
 #gives subject list and values list   
