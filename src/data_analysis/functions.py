@@ -162,6 +162,5 @@ def get_subjects(lab_data):
     subjects = [lab_data.loc[i, 'study_id'] for i in range(len(lab_data))]
     return subjects
     
-    
-
-    
+def get_iphone_labels(data):
+    return [label for label in data.index]
